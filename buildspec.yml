@@ -1,8 +1,25 @@
 version: 0.2
+
 phases:
   install:
     runtime-versions:
       php: 8.1
     commands:
-      - php -v
-      - echo "Hello from CodeBuild in us-east-1"
+      - echo "Installing Composer and dev tools..."
+      - curl -sS https://getcomposer.org/installer | php
+      - php composer.phar install --no-interaction --prefer-dist
+  pre_build:
+    commands:
+      - echo "Running PHPStan..."
+      - ./vendor/bin/phpstan analyse --configuration=phpstan.neon
+      - echo "Running PHPCS (PSR12)..."
+      - ./vendor/bin/phpcs --standard=PSR12 src
+  build:
+    commands:
+      - echo "Running PHPUnit..."
+      - ./vendor/bin/phpunit
+      - echo "Composer security audit..."
+      - composer audit --no-interaction --no-dev --format=table || true
+  post_build:
+    commands:
+      - echo "Review checks completed."
